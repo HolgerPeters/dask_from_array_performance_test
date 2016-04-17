@@ -11,3 +11,5 @@ Code can be run with ``py.test``. Note that the
 files with a plot of execution times, comparison.pdf and comparison.png.
 
 I added the products of one test run on my laptop to this repository.
+
+.. image:: comparison.png
