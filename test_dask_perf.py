@@ -52,22 +52,10 @@ def cython_openmp(arr):
 
 @wall_times
 def dask_(arr):
-    darr = da.from_array(arr, chunks=arr.shape[0] / CPU_COUNT)
+    darr = da.from_array(arr, chunks=arr.shape[0] / CPU_COUNT, name='x')
     mx = darr.max()
     x = (darr / mx).sum() * mx
     x.compute()
-
-
-@wall_times
-def dask_native(darr):
-    mx = darr.max()
-    x = (darr / mx).sum() * mx
-    x.compute()
-
-
-@wall_times
-def dask_no_computation(arr):
-    darr = da.from_array(arr, chunks=arr.shape[0] / CPU_COUNT)
 
 
 @wall_times
@@ -82,19 +70,13 @@ class TestPerformance(unittest.TestCase):
         cls.perfs = OrderedDict()
         N = 5e8
         cls.x = np.random.poisson(10, size=int(N)) * 1.
-        cls.dx = da.from_array(cls.x, chunks=cls.x.shape[0] / CPU_COUNT)
+        cls.dx = da.from_array(cls.x, chunks=cls.x.shape[0] / CPU_COUNT, name='x')
 
     def testNumpy(self):
         numpy_(self.x, self.perfs, "np")
 
     def test_dask(self):
         dask_(self.x, self.perfs, "DskFromNumpy")
-
-    def testdask_from_array_only(self):
-        dask_no_computation(self.x, self.perfs, "DskFromArray")
-
-    def test_dask_native(self):
-        dask_native(self.dx, self.perfs, "DskNative")
 
     def testNumexpr(self):
         numexpr_(self.x, self.perfs, "NX")
@@ -108,7 +90,10 @@ class TestPerformance(unittest.TestCase):
                     .reshape((len(cls.perfs), -1))
 
         plt.boxplot(timings.T, labels=list(cls.perfs.keys()), showmeans=True)
-        plt.ylim((0, timings.max()))
+        mx = np.percentile(timings, 97, axis=1)
+        print(mx)
+        assert len(mx) == len(list(cls.perfs.keys()))
+        plt.ylim((0, np.max(mx)))
 
         plt.title("Comparison of Execution Times")
         plt.ylabel("Execution Time t in ms")
