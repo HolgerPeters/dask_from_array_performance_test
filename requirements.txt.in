@@ -1,0 +1,7 @@
+pytest
+numexpr
+toolz
+dask
+numpy
+cython
+matplotlib
