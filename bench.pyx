@@ -7,14 +7,24 @@ from cython.parallel import prange
 cimport numpy as np
 import numpy as np
 
+from libc.math cimport exp
+
+@cython.nonecheck(False)
+@cython.cdivision(True)
 @cython.boundscheck(False)
-def csum_parallelized(np.ndarray[np.float64_t, ndim=1] arr):
-    cdef int n = arr.shape[0]
-    cdef int i
-    cdef np.float64_t s = 0.0
-    cdef double mx = np.max(arr)
+def softmax_with_openmp(np.ndarray[np.float64_t, ndim=1] x):
+    cdef:
+        int n = x.shape[0]
+        int i
+        np.float64_t s = 0.0
+        double max_x = np.max(x)
+        np.ndarray[np.float64_t, ndim=1] e_x = np.empty(n)
 
-    for i in prange(n, nogil=True):
-        s += arr[i] / mx
-
-    return s * mx
+    with nogil:
+        for i in prange(n):
+            e_x[i] = exp(x[i] - max_x)
+        for i in prange(n):
+            s += e_x[i]
+        for i in prange(n):
+            e_x[i] /= s
+    return e_x

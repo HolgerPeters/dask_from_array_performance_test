@@ -10,7 +10,7 @@ from matplotlib import use
 use('agg')
 from matplotlib import pyplot as plt
 
-from bench import csum_par
+from bench import softmax_with_openmp
 
 CPU_COUNT = cpu_count()
 
@@ -35,54 +35,54 @@ def wall_times(method):
 
 
 @wall_times
-def numpy_(arr):
-    mx = arr.max()
-    (arr / mx).sum()
-
-
-@wall_times
-def cython_naive():
-    csum(arr)
+def numpy_(x):
+    e_x = np.exp(x - x.max())
+    return e_x / e_x.sum()
 
 
 @wall_times
 def cython_openmp(arr):
-    csum_par(arr)
+    normalized = softmax_with_openmp(arr)
+    return normalized
 
 
 @wall_times
-def dask_(arr):
-    darr = da.from_array(arr, chunks=arr.shape[0] / CPU_COUNT, name='x')
-    mx = darr.max()
-    x = (darr / mx).sum() * mx
-    x.compute()
+def dask_implementation(x):
+    # x = da.from_array(x, chunks=x.shape[0] / CPU_COUNT, name='x')
+    e_x = da.exp(x - x.max())
+    out = e_x / e_x.sum()
+    normalized = out.compute()
+    return normalized
 
 
 @wall_times
-def numexpr_(arr):
-    mx = ne.evaluate('max(arr)')
-    ne.evaluate('sum(arr / mx)') * mx
+def numexpr_implementation(x):
+    mx = ne.evaluate('max(x)')
+    e_x = ne.evaluate('exp(x - mx)')
+    sum_of_exp = ne.evaluate('sum(e_x)')
+    normalized = ne.evaluate('e_x / sum_of_exp')
+    return normalized
 
 
 class TestPerformance(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.perfs = OrderedDict()
-        N = 5e8
+        N = 1e8
         cls.x = np.random.poisson(10, size=int(N)) * 1.
         cls.dx = da.from_array(cls.x, chunks=cls.x.shape[0] / CPU_COUNT, name='x')
 
     def testNumpy(self):
-        numpy_(self.x, self.perfs, "np")
+        numpy_(self.x, self.perfs, "numpy")
 
     def test_dask(self):
-        dask_(self.x, self.perfs, "DskFromNumpy")
+        dask_implementation(self.dx, self.perfs, "Dask")
 
     def testNumexpr(self):
-        numexpr_(self.x, self.perfs, "NX")
+        numexpr_implementation(self.x, self.perfs, "Numexpr")
 
     def testOpenMP(self):
-        cython_openmp(self.x, self.perfs, "CyOMP")
+        cython_openmp(self.x, self.perfs, "CythonOMP")
 
     @classmethod
     def tearDownClass(cls):
