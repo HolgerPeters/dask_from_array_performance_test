@@ -23,7 +23,6 @@ def softmax_with_openmp(np.ndarray[np.float64_t, ndim=1] x):
     with nogil:
         for i in prange(n):
             e_x[i] = exp(x[i] - max_x)
-        for i in prange(n):
             s += e_x[i]
         for i in prange(n):
             e_x[i] /= s
