@@ -8,7 +8,9 @@ extensions = [
     Extension(
         "bench",
         ["bench.pyx"],
-        include_dirs=[numpy.get_include()]
+        include_dirs=[numpy.get_include()],
+        extra_compile_args=['-fopenmp'],
+        extra_link_args=['-fopenmp'],
         # include_dirs = [...],
         # libraries = [...],
         # library_dirs = [...]
