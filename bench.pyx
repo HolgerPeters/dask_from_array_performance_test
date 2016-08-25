@@ -12,7 +12,7 @@ from libc.math cimport exp
 @cython.nonecheck(False)
 @cython.cdivision(True)
 @cython.boundscheck(False)
-def softmax_with_openmp(np.ndarray[np.float64_t, ndim=1] x):
+def softmax_openmp(np.ndarray[np.float64_t, ndim=1] x):
     cdef:
         int n = x.shape[0]
         int i
