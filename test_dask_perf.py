@@ -1,3 +1,4 @@
+from __future__ import print_function, division, absolute_import
 import time
 import unittest
 from collections import OrderedDict, namedtuple
@@ -40,7 +41,7 @@ def softmax_numpy(x):
 
 
 def softmax_dask(x):
-    # x = da.from_array(x, chunks=x.shape[0] / CPU_COUNT, name='x')
+    x = da.from_array(x, chunks=int(x.shape[0] / CPU_COUNT), name='x')
     e_x = da.exp(x - x.max())
     out = e_x / e_x.sum()
     normalized = out.compute()
@@ -61,13 +62,12 @@ class TestPerformance(unittest.TestCase):
         cls.perfs = OrderedDict()
         N = 1e8
         cls.x = np.random.poisson(10, size=int(N)) * 1.
-        cls.dx = da.from_array(cls.x, chunks=cls.x.shape[0] / CPU_COUNT, name='x')
 
     def test_numpy(self):
         wall_times(softmax_numpy)(self.x, self.perfs, "numpy")
 
     def test_dask(self):
-        wall_times(softmax_dask)(self.dx, self.perfs, "Dask")
+        wall_times(softmax_dask)(self.x, self.perfs, "Dask")
 
     def test_numexpr(self):
         wall_times(softmax_numexpr)(self.x, self.perfs, "Numexpr")
